@@ -35,19 +35,24 @@ exports.remove_admin = onRequest(async (req, res) => {
 
 exports.register = onRequest(async (req, res) => {
   try {
-    const { userId, callsign } = req.body;
+    const userId = req.query.userId;
+    const callsign = req.query.callsign;
 
-    if (!userId) {
-      return res.status(400).send("missing userId");
+    if (!userId || typeof userId !== "string") {
+      return res.status(400).send("missing or invalid userId");
     }
-    if (!callsign) {
+    if (!callsign || typeof callsign !== "string") {
       return res.status(400).send("missing callsign or name");
     }
 
+    const formattedCallsign = callsign.toUpperCase().split("_").join(" ");
+
     const userDoc = db.collection("users").doc(userId);
-    // todo: process callsign
-    await userDoc.set({ userId, callsign: callsign.toUpperCase() });
-    res.status(201).end(`Registerd user ${userId} as ${callsign}`);
+    await userDoc.set({
+      userId,
+      callsign: formattedCallsign,
+    });
+    res.status(201).end(`Registered user ${userId} as ${formattedCallsign}`);
   } catch (error) {
     res.status(500).json({ error });
   }
@@ -72,25 +77,29 @@ exports.unregister = onRequest(async (req, res) => {
 
 // Remove user by callsign/name
 exports.remove_user = onRequest(async (req, res) => {
-  try {
-    const callsign = req.query.callsign;
+  const callsign = req.query.callsign;
+  if (!callsign || typeof callsign !== "string") {
+    return res.status(400).send("missing callsign or name");
+  }
 
-    if (!callsign) {
-      return res.status(400).send("missing callsign");
-    }
+  const formattedCallsign = callsign.toUpperCase().split("_").join(" ");
+
+  try {
     // Find user by callsign
     const snapshot = await db
       .collection("users")
-      .where("callsign", "==", callsign)
+      .where("callsign", "==", formattedCallsign)
       .get();
 
     if (snapshot.empty) {
-      return res.status(404).send(`no user found with callsign ${callsign}`);
+      return res
+        .status(404)
+        .send(`no user found with callsign ${formattedCallsign}`);
     }
 
     const userDoc = snapshot.docs[0].ref; // Get first match in query snapshot, then access the referenced document
     await userDoc.delete();
-    res.status(204).end(`Removed ${callsign}`);
+    res.status(204).end(`Removed ${formattedCallsign}`);
   } catch (error) {
     res.status(500).json({ error });
   }
