@@ -5,12 +5,29 @@ const { getFirestore } = require("firebase-admin/firestore");
 initializeApp();
 const db = getFirestore();
 
-exports.hoto = onRequest(async (req, res) => {
+exports.add_admin = onRequest(async (req, res) => {
+  const userId = req.query.userId;
+  if (!userId || typeof userId !== "string") {
+    return res.status(400).send("missing or invalid userId");
+  }
   try {
-    const userId = req.query.userId;
-    if (!userId) {
-      return res.status(400).send("missing userId");
-    }
+    const adminDoc = db.collection("admins").doc(userId);
+    await adminDoc.set({ userId });
+    res.status(201).end(`added user ${userId} as admin`);
+  } catch (error) {
+    res.status(500).json({ error });
+  }
+});
+
+exports.remove_admin = onRequest(async (req, res) => {
+  const userId = req.query.userId;
+  if (!userId || typeof userId !== "string") {
+    return res.status(400).send("missing or invalid userId");
+  }
+  try {
+    const adminDoc = db.collection("admins").doc(userId);
+    await adminDoc.delete();
+    res.status(201).end(`removed user ${userId}'s admin status`);
   } catch (error) {
     res.status(500).json({ error });
   }
@@ -54,7 +71,7 @@ exports.unregister = onRequest(async (req, res) => {
 });
 
 // Remove user by callsign/name
-exports.remove = onRequest(async (req, res) => {
+exports.remove_user = onRequest(async (req, res) => {
   try {
     const callsign = req.query.callsign;
 
@@ -73,7 +90,7 @@ exports.remove = onRequest(async (req, res) => {
 
     const userDoc = snapshot.docs[0].ref; // Get first match in query snapshot, then access the referenced document
     await userDoc.delete();
-    res.status(204).end(`Removed user ${userId}`);
+    res.status(204).end(`Removed ${callsign}`);
   } catch (error) {
     res.status(500).json({ error });
   }
