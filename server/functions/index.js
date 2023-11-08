@@ -17,7 +17,10 @@ exports.get_users = onRequest(async (req, res) => {
 
 exports.get_admins = onRequest(async (req, res) => {
   try {
-    const adminsSnapshot = await db.collection("admins").get();
+    const adminsSnapshot = await db
+      .collection("users")
+      .where("admin", "==", true)
+      .get();
     const admins = adminsSnapshot.docs.map((doc) => doc.data());
     res.json(admins);
   } catch (error) {
@@ -54,8 +57,8 @@ exports.add_admin = onRequest(async (req, res) => {
       },
       { merge: true }
     );
-    const userData = (await userDoc.get()).data()
-    res.json(userData)
+    const userData = (await userDoc.get()).data();
+    res.json(userData);
   } catch (error) {
     res.status(500).json({ error });
   }
@@ -89,8 +92,8 @@ exports.remove_admin = onRequest(async (req, res) => {
       },
       { merge: true }
     );
-    const userData = (await userDoc.get()).data()
-    res.json(userData)
+    const userData = (await userDoc.get()).data();
+    res.json(userData);
   } catch (error) {
     res.status(500).json({ error });
   }

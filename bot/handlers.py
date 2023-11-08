@@ -4,64 +4,70 @@ from telegram.ext import CallbackContext
 import os
 
 
-# Add new clerk as admin: e.g. /add_admin 123
+# Add new admin by theier user_id: e.g. /add_admin 123
 async def add_admin(update: Update, context: CallbackContext):
-    # Check if user_id argument is provided
-    if len(context.args != 1):
-        await update.message.reply_text("Please provide the telegram user_id of the new registry clerk\ne.g. /hoto 123")
-        return
-
-    new_admin_id = context.args[0]
-
-    try:
-        await update.message.reply_text('Processing...')
-        requests.post(
-            f'https://add-admin-qbfqiotlpa-uc.a.run.app/?userId={new_admin_id}')
-        await update.message.reply_text(f'Added user {new_admin_id} as admin')
-    except Exception as error:
-        await update.message.reply_text(f'Error handing over: {error}')
-
-
-# Remove outgoing clerk's admin status
-async def remove_admin(update: Update, context: CallbackContext):
-    # Check if user_id argument is provided
-    if len(context.args != 1):
-        await update.message.reply_text("Please provide the telegram user_id of the outgoing registry clerk\ne.g. /hoto 123")
-        return
-
-    userId = context.args[0]
-
-    try:
-        await update.message.reply_text('Processing...')
-        requests.post(
-            f'https://remove-admin-qbfqiotlpa-uc.a.run.app/?userId={userId}')
-        await update.message.reply_text(f'Removed admin status from user {userId}')
-    except Exception as error:
-        await update.message.reply_text(f'Error handing over: {error}')
-
-
-# Remove user by their callsign: /remove GLENN
-async def remove(update: Update, context: CallbackContext):
     if len(context.args) == 0:  # No argument provided
-        await update.message.reply_text("Please provide the callsign/name of the user to be removed")
+        await update.message.reply_text("Please provide the callsign/name of the user to be promoted to admin\n\ne.g. /add_admin GLENN")
         return
 
-    # Handle names that contain spaces
-    callsign = ('_').join(context.args)
+    callsign = ('_').join(context.args)  # Handle names that contain spaces
 
     try:
         await update.message.reply_text('Processing...')
-        requests.delete(
+        res = requests.post(
+            f'https://add-admin-qbfqiotlpa-uc.a.run.app/?callsign={callsign}')
+        res.raise_for_status()
+        await update.message.reply_text(f'Added user {callsign} as admin')
+    except Exception as error:
+        await update.message.reply_text(f'Error adding admin: {error}')
+
+
+# Remove admin by their callsign
+async def remove_admin(update: Update, context: CallbackContext):
+    if len(context.args) == 0:  # No argument provided
+        await update.message.reply_text("Please provide the callsign/name of the admin to be demoted\n\ne.g. /remove_admin GLENN")
+        return
+
+    callsign = ('_').join(context.args)  # Handle names that contain spaces
+
+    try:
+        await update.message.reply_text('Processing...')
+        res = requests.delete(
+            f'https://remove-admin-qbfqiotlpa-uc.a.run.app/?callsign={callsign}')
+        res.raise_for_status()
+        await update.message.reply_text('Removed admin')
+
+    except requests.exceptions.HTTPError as error:
+        await update.message.reply_text(f'Error removing admin: {error.response.text}')
+    except Exception as error:
+        await update.message.reply_text(f'Error removing admin: {error}')
+
+
+# Remove user by their callsign: /remove_user GLENN
+async def remove_user(update: Update, context: CallbackContext):
+    if len(context.args) == 0:  # No argument provided
+        await update.message.reply_text("Please provide the callsign or name of the user to be removed\n\ne.g. /remove_user GLENN")
+        return
+
+    callsign = ('_').join(context.args)  # Handle names that contain spaces
+
+    try:
+        await update.message.reply_text('Processing...')
+        res = requests.delete(
             f'https://remove-user-qbfqiotlpa-uc.a.run.app/?callsign={callsign}')
-        await update.message.reply_text(f'{callsign} has been removed. They will no longer be sent notifications.')
+        res.raise_for_status()
+        await update.message.reply_text(f"Removed {res.json()['callsign']}. They will no longer receive notifications from this bot.")
+
+    except requests.exceptions.HTTPError as error:
+        await update.message.reply_text(f'Error removing user: {error.response.text}')
     except Exception as error:
         await update.message.reply_text(f'Error removing user: {error}')
 
 
-# Register yourself with your callsign
+# Register self with callsign
 async def register(update: Update, context: CallbackContext):
     if len(context.args) == 0:  # No argument provided
-        await update.message.reply_text("Please provide your callsign or name")
+        await update.message.reply_text("Please provide your callsign or name\n\ne.g. /register GLENN")
         return
 
     user_id = update.effective_user.id
@@ -73,26 +79,64 @@ async def register(update: Update, context: CallbackContext):
         res = requests.post(
             f'https://register-qbfqiotlpa-uc.a.run.app/?userId={user_id}&callsign={callsign}')
         res.raise_for_status()
-        await update.message.reply_text('Registered successfully')
+        await update.message.reply_text(f"Successfully registered! You will begin receiving notifications from this bot.")
+
+    except requests.exceptions.HTTPError as error:
+        await update.message.reply_text(f'Error registering: {error.response.text}')
     except Exception as error:
         # Send user-friendly error message
         await update.message.reply_text(f'Error registering: {error}')
 
 
-# Unregister yourself
+# Unregister self
 async def unregister(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
 
     try:
         await update.message.reply_text('Processing...')
-        requests.delete(
+        res = requests.delete(
             f'https://unregister-qbfqiotlpa-uc.a.run.app/?userId={user_id}')
-        await update.message.reply_text('Unregistered successfully. You will no longer receive notifications from this bot')
+        res.raise_for_status()
+        await update.message.reply_text('Successfully unregistered. You will no longer receive notifications from this bot.')
+
+    except requests.exceptions.HTTPError as error:
+        await update.message.reply_text(f'Error unregistering: {error.response.text}')
     except Exception as error:
         await update.message.reply_text(f'Error unregistering: {error}')
 
 
+# Get list of users
+async def get_users(update: Update, context: CallbackContext):
+    try:
+        await update.message.reply_text('Fetching data...')
+        res = requests.get('https://get-users-qbfqiotlpa-uc.a.run.app')
+        users = res.json()
+        formatted_users = ('\n').join([user['callsign'] for user in users])
+        await update.message.reply_text(formatted_users)
+    except Exception as error:
+        await update.message.reply_text(f'Error getting users: {error}')
+
+
+# Get list of admins
+async def get_admins(update: Update, context: CallbackContext):
+    try:
+        await update.message.reply_text('Fetching data...')
+        res = requests.get('https://get-admins-qbfqiotlpa-uc.a.run.app')
+        admins = res.json()
+        formatted_admins = ('\n').join([admin['userId'] for admin in admins])
+        await update.message.reply_text(formatted_admins)
+    except Exception as error:
+        await update.message.reply_text(f'Error getting admins: {error}')
+
+# Get own user_id
+
+
+async def get_id(update: Update, context: CallbackContext):
+    await update.message.reply_text(update.effective_user.id)
+
 # Show list of commands
+
+
 async def help(update: Update, context: CallbackContext):
     help_text = ""
     await update.message.reply_text(f"")
