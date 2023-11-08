@@ -73,7 +73,8 @@ exports.register = onRequest(async (req, res) => {
       userId,
       callsign: formattedCallsign,
     });
-    res.status(201).end(`Registered user ${userId} as ${formattedCallsign}`);
+    const userData = (await userDoc.get()).data();
+    res.json(userData);
   } catch (error) {
     res.status(500).json({ error });
   }
@@ -119,8 +120,9 @@ exports.remove_user = onRequest(async (req, res) => {
     }
 
     const userDoc = snapshot.docs[0].ref; // Get first match in query snapshot, then access the referenced document
+    const userData = snapshot.docs[0].data
     await userDoc.delete();
-    res.status(204).end(`Removed ${formattedCallsign}`);
+    res.json(userData);
   } catch (error) {
     res.status(500).json({ error });
   }
