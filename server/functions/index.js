@@ -5,6 +5,26 @@ const { getFirestore } = require("firebase-admin/firestore");
 initializeApp();
 const db = getFirestore();
 
+exports.get_users = onRequest(async (req, res) => {
+  try {
+    const usersSnapshot = await db.collection("users").get();
+    const users = usersSnapshot.docs.map((doc) => doc.data());
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error });
+  }
+});
+
+exports.get_admins = onRequest(async (req, res) => {
+  try {
+    const adminsSnapshot = await db.collection("admins").get();
+    const admins = adminsSnapshot.docs.map((doc) => doc.data());
+    res.json(admins);
+  } catch (error) {
+    res.status(500).json({ error });
+  }
+});
+
 exports.add_admin = onRequest(async (req, res) => {
   const userId = req.query.userId;
   if (!userId || typeof userId !== "string") {
@@ -33,6 +53,7 @@ exports.remove_admin = onRequest(async (req, res) => {
   }
 });
 
+// For users to register themselves with their callsigns
 exports.register = onRequest(async (req, res) => {
   try {
     const userId = req.query.userId;
@@ -58,7 +79,7 @@ exports.register = onRequest(async (req, res) => {
   }
 });
 
-// Remove user by id
+// For users to unregister themselves
 exports.unregister = onRequest(async (req, res) => {
   try {
     const userId = req.query.userId;
@@ -75,7 +96,7 @@ exports.unregister = onRequest(async (req, res) => {
   }
 });
 
-// Remove user by callsign/name
+// For admins to remove users by their callsign
 exports.remove_user = onRequest(async (req, res) => {
   const callsign = req.query.callsign;
   if (!callsign || typeof callsign !== "string") {
@@ -94,7 +115,7 @@ exports.remove_user = onRequest(async (req, res) => {
     if (snapshot.empty) {
       return res
         .status(404)
-        .send(`no user found with callsign ${formattedCallsign}`);
+        .send(`no user found with callsign or name ${formattedCallsign}`);
     }
 
     const userDoc = snapshot.docs[0].ref; // Get first match in query snapshot, then access the referenced document
