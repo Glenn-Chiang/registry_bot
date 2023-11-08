@@ -17,7 +17,10 @@ async def add_admin(update: Update, context: CallbackContext):
         res = requests.post(
             f'https://add-admin-qbfqiotlpa-uc.a.run.app/?callsign={callsign}')
         res.raise_for_status()
-        await update.message.reply_text(f'Added user {callsign} as admin')
+        await update.message.reply_text(f"Added {res.json()['callsign']} as admin")
+
+    except requests.exceptions.HTTPError as error:
+        await update.message.reply_text(f'Error adding admin: {error.response.text}')
     except Exception as error:
         await update.message.reply_text(f'Error adding admin: {error}')
 
@@ -35,7 +38,7 @@ async def remove_admin(update: Update, context: CallbackContext):
         res = requests.delete(
             f'https://remove-admin-qbfqiotlpa-uc.a.run.app/?callsign={callsign}')
         res.raise_for_status()
-        await update.message.reply_text('Removed admin')
+        await update.message.reply_text(f"{res.json()['callsign']} is no longer an admin")
 
     except requests.exceptions.HTTPError as error:
         await update.message.reply_text(f'Error removing admin: {error.response.text}')
@@ -111,6 +114,11 @@ async def get_users(update: Update, context: CallbackContext):
         await update.message.reply_text('Fetching data...')
         res = requests.get('https://get-users-qbfqiotlpa-uc.a.run.app')
         users = res.json()
+
+        if len(users) == 0:
+            await update.message.reply_text('No users')
+            return
+
         formatted_users = ('\n').join([user['callsign'] for user in users])
         await update.message.reply_text(formatted_users)
     except Exception as error:
@@ -123,7 +131,13 @@ async def get_admins(update: Update, context: CallbackContext):
         await update.message.reply_text('Fetching data...')
         res = requests.get('https://get-admins-qbfqiotlpa-uc.a.run.app')
         admins = res.json()
-        formatted_admins = ('\n').join([admin['userId'] for admin in admins])
+
+        # No admins
+        if len(admins) == 0:
+            await update.message.reply_text('No admins')
+            return
+
+        formatted_admins = ('\n').join([admin['callsign'] for admin in admins])
         await update.message.reply_text(formatted_admins)
     except Exception as error:
         await update.message.reply_text(f'Error getting admins: {error}')
