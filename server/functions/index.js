@@ -25,29 +25,72 @@ exports.get_admins = onRequest(async (req, res) => {
   }
 });
 
+// Give admin status to existing user. They must first have registered as a user.
 exports.add_admin = onRequest(async (req, res) => {
-  const userId = req.query.userId;
-  if (!userId || typeof userId !== "string") {
-    return res.status(400).send("missing or invalid userId");
+  const callsign = req.query.callsign;
+  if (!callsign || typeof callsign !== "string") {
+    return res.status(400).send("missing or invalid callsign");
   }
+
+  const formattedCallsign = callsign.toUpperCase().split("_").join(" ");
+
   try {
-    const adminDoc = db.collection("admins").doc(userId);
-    await adminDoc.set({ userId });
-    res.status(201).end(`added user ${userId} as admin`);
+    // Find user by callsign
+    const snapshot = await db
+      .collection("users")
+      .where("callsign", "==", formattedCallsign)
+      .get();
+
+    if (snapshot.empty) {
+      return res
+        .status(404)
+        .send(`no user found with callsign or name of ${formattedCallsign}`);
+    }
+
+    const userDoc = snapshot.docs[0].ref; // Get first match in query snapshot, then access the referenced document
+    await userDoc.set(
+      {
+        admin: true, // Update existing user's admin status to true
+      },
+      { merge: true }
+    );
+    const userData = (await userDoc.get()).data()
+    res.json(userData)
   } catch (error) {
     res.status(500).json({ error });
   }
 });
 
 exports.remove_admin = onRequest(async (req, res) => {
-  const userId = req.query.userId;
-  if (!userId || typeof userId !== "string") {
-    return res.status(400).send("missing or invalid userId");
+  const callsign = req.query.callsign;
+  if (!callsign || typeof callsign !== "string") {
+    return res.status(400).send("missing or invalid callsign");
   }
+
+  const formattedCallsign = callsign.toUpperCase().split("_").join(" ");
+
   try {
-    const adminDoc = db.collection("admins").doc(userId);
-    await adminDoc.delete();
-    res.status(201).end(`removed user ${userId}'s admin status`);
+    // Find user by callsign
+    const snapshot = await db
+      .collection("users")
+      .where("callsign", "==", formattedCallsign)
+      .get();
+
+    if (snapshot.empty) {
+      return res
+        .status(404)
+        .send(`no user found with callsign or name of ${formattedCallsign}`);
+    }
+
+    const userDoc = snapshot.docs[0].ref; // Get first match in query snapshot, then access the referenced document
+    await userDoc.set(
+      {
+        admin: false, // Update existing user's admin status to false. User has NOT been deleted and is still a user.
+      },
+      { merge: true }
+    );
+    const userData = (await userDoc.get()).data()
+    res.json(userData)
   } catch (error) {
     res.status(500).json({ error });
   }
@@ -63,7 +106,7 @@ exports.register = onRequest(async (req, res) => {
       return res.status(400).send("missing or invalid userId");
     }
     if (!callsign || typeof callsign !== "string") {
-      return res.status(400).send("missing callsign or name");
+      return res.status(400).send("missing or invalid callsign");
     }
 
     const formattedCallsign = callsign.toUpperCase().split("_").join(" ");
@@ -120,7 +163,7 @@ exports.remove_user = onRequest(async (req, res) => {
     }
 
     const userDoc = snapshot.docs[0].ref; // Get first match in query snapshot, then access the referenced document
-    const userData = snapshot.docs[0].data
+    const userData = snapshot.docs[0].data();
     await userDoc.delete();
     res.json(userData);
   } catch (error) {
