@@ -152,5 +152,7 @@ async def get_id(update: Update, context: CallbackContext):
 
 
 async def help(update: Update, context: CallbackContext):
-    help_text = ""
-    await update.message.reply_text(f"")
+    with open("help_text.txt", "r") as file:
+        text = file.read()
+        # print(text)
+    await update.message.reply_text(text)

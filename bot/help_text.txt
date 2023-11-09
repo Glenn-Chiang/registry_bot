@@ -1,0 +1,27 @@
+/register [callsign or name]
+e.g. /register GLENN
+Register YOURSELF under this callsign or name. You will start receiving notifications from this bot when you have OIL expiring within a week.
+
+/unregister
+Unregister yourself. You will no longer receive notifications from this bot when you have OIL expiring within a week.
+
+/remove_user [callsign or name]
+e.g. /remove_user GLENN
+Remove this user. They will no longer receive notifications from this bot when they have OIL expiring within a week.
+Ensure that the callsign/name provided matches the callsign/name that they registered with.
+
+/add_admin [callsign or name]
+e.g. /add_admin GLENN
+Add this person as an admin. They will start receiving notifications from this bot when OIL is updated.
+
+/remove_admin [callsign or name]
+e.g. /remove_admin GLENN
+Remove this person's admin status. They will no longer receive notifications from this bot when OIL is updated.
+
+/get_users
+Get a list of all registered users
+
+/get_admins
+Get a list of all admins
+
+If you have any further queries, feel free to contact the developer @Glenn_Chiang
