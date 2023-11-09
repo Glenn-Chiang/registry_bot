@@ -28,6 +28,28 @@ exports.get_admins = onRequest(async (req, res) => {
   }
 });
 
+exports.get_userId = onRequest(async (req, res) => {
+  const callsign = req.query.callsign;
+  if (!callsign || typeof callsign !== "string") {
+    return res.status(400).send("missing or invalid callsign");
+  }
+  const formattedCallsign = callsign.toUpperCase().split("_").join(" ");
+
+  const snapshot = await db
+    .collection("users")
+    .where("callsign", "==", formattedCallsign)
+    .get();
+
+  if (snapshot.empty) {
+    return res
+      .status(404)
+      .send(`no user found with callsign or name of ${formattedCallsign}`);
+  }
+
+  const userId = snapshot.docs[0].id; // Get first match in query snapshot, then access the referenced document
+  res.json({ userId });
+});
+
 // Give admin status to existing user. They must first have registered as a user.
 exports.add_admin = onRequest(async (req, res) => {
   const callsign = req.query.callsign;
