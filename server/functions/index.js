@@ -40,13 +40,7 @@ exports.get_userId = onRequest(async (req, res) => {
     .where("callsign", "==", formattedCallsign)
     .get();
 
-  if (snapshot.empty) {
-    return res
-      .status(404)
-      .send(`no user found with callsign or name of ${formattedCallsign}`);
-  }
-
-  const userId = snapshot.docs[0].id; // Get first match in query snapshot, then access the referenced document
+  const userId = snapshot.empty ? undefined : snapshot.docs[0].id; // Get first match in query snapshot, then access the referenced document
   res.json({ userId });
 });
 
